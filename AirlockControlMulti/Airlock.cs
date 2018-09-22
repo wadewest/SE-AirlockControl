@@ -32,12 +32,6 @@ namespace IngameScript
     {
       static readonly Color ColorSafe = new Color(0, 255, 0, 255);
       static readonly Color ColorDanger = new Color(255, 0, 0, 255);
-      const string DefaultAirLockSettings = @"[Airlock Settings]
-externalOjects=Ext
-internalOjects=Int
-backupAirVents=Backup
-depresserizeWarning=10
-presserizeWarning=2";
 
       private IMyBlockGroup BlockGroup;
       private string AirlockId;

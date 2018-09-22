@@ -35,17 +35,6 @@ namespace IngameScript
     // have to use the template if you don't want to. Just do so the first
     // time to see what a utility class looks like.
 
-    const string PrimaryVentId = "Primary";
-
-    const string defaultAirlockControlSettings = @"[Airlock Control Settings]
-statusLCD=!airlocks
-;Below the --- list a group name for each airlock per line
-;The 3 already listed are for examples and can safely be removed
----
-Airlock 1
-Main Hangar
-Airlock 2 ";
-
     Dictionary<string, Airlock> Airlocks;
     StringBuilder Output;
 
@@ -67,7 +56,7 @@ Airlock 2 ";
     private void Initialize()
     {
       Airlocks.Clear();
-      if (string.IsNullOrEmpty(Me.CustomData)) Me.CustomData = defaultAirlockControlSettings;
+      if (string.IsNullOrEmpty(Me.CustomData)) Me.CustomData = DefaultAirlockControlSettings;
       if (!InitSettings.TryParse(Me.CustomData, out InitParseResult))
       {
         Echo(InitParseResult.ToString());
