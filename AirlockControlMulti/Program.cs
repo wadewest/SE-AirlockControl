@@ -75,9 +75,6 @@ namespace IngameScript
     {
       if (CommandLine.TryParse(argument))
       {
-        var modifiers = CycleModifiers.None;
-        if (CommandLine.Switch("open")) modifiers |= CycleModifiers.AutoOpen;
-        if (CommandLine.Switch("skip-wait")) modifiers |= CycleModifiers.SkipWaitTime;
         switch (CommandLine.Argument(0).ToLower())
         {
           case "initialize":
@@ -85,18 +82,40 @@ namespace IngameScript
             Output.AppendLine("Reinitializing");
             Initialize();
             break;
-          case "presserize":
-          case "in":
-            Airlocks[CommandLine.Argument(1)].CycleIn(modifiers);
-            break;
-          case "depresserize":
-          case "out":
-            Airlocks[CommandLine.Argument(1)].CycleOut(modifiers);
-            break;
-          case "toggle":
-            Airlocks[CommandLine.Argument(1)].CycleToggle(modifiers);
+          default:
+            ProcessAirlockCommand();
             break;
         }
+      }
+    }
+
+    private void ProcessAirlockCommand()
+    {
+      var modifiers = default(CycleModifiers);
+      modifiers.AutoOpenAll = CommandLine.Switch("open");
+      modifiers.SkipWaitTime = CommandLine.Switch("skip-wait");
+      string doorTag;
+      foreach (var s in CommandLine.Switches.Where(x => x.Contains("=")))
+      {
+        if (!string.IsNullOrEmpty(doorTag = StringUtils.After("open=", s)))
+        {
+          if (modifiers.AutoOpen == null) modifiers.AutoOpen = new HashSet<string>();
+          modifiers.AutoOpen.Add(doorTag);
+        }
+      }
+      switch (CommandLine.Argument(0).ToLower())
+      {
+        case "presserize":
+        case "in":
+          Airlocks[CommandLine.Argument(1)].CycleIn(modifiers);
+          break;
+        case "depresserize":
+        case "out":
+          Airlocks[CommandLine.Argument(1)].CycleOut(modifiers);
+          break;
+        case "toggle":
+          Airlocks[CommandLine.Argument(1)].CycleToggle(modifiers);
+          break;
       }
     }
 

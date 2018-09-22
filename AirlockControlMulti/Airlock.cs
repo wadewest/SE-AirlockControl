@@ -21,11 +21,10 @@ namespace IngameScript
   {
 
     public enum AirlockStates { BlockGroupNotFound, Deactivated, Initializing, Pressurized, Pressurizing, Depressurized, Depressurizing };
-    public enum CycleModifiers
+    public struct CycleModifiers
     {
-      None = 0,
-      AutoOpen = 1,
-      SkipWaitTime = 1 << 1
+      public bool AutoOpenAll, SkipWaitTime;
+      public HashSet<string> AutoOpen;
     }
 
     public class Airlock
@@ -91,6 +90,8 @@ namespace IngameScript
 
       private IEnumerator<bool> DetectCurrentState()
       {
+        var cycleModifiers = default(CycleModifiers);
+        cycleModifiers.SkipWaitTime = true;
         if (!PrimaryVent.CanPressurize || PrimaryVent.GetOxygenLevel() == 0)
         {
           State = AirlockStates.Depressurized;
@@ -98,11 +99,11 @@ namespace IngameScript
         }
         if (PrimaryVent.GetOxygenLevel() > 0 && PrimaryVent.Depressurize)
         {
-          return ProcedureDepressurize(CycleModifiers.SkipWaitTime);
+          return ProcedureDepressurize(cycleModifiers);
         }
         if (PrimaryVent.GetOxygenLevel() < 1F && !PrimaryVent.Depressurize)
         {
-          return ProcedurePressurize(CycleModifiers.SkipWaitTime);
+          return ProcedurePressurize(cycleModifiers);
         }
         if (PrimaryVent.GetOxygenLevel() == 1F && !PrimaryVent.Depressurize)
         {
@@ -112,7 +113,7 @@ namespace IngameScript
         return ProcedureMonitor();
       }
 
-      public void CycleToggle(CycleModifiers modifiers = CycleModifiers.None)
+      public void CycleToggle(CycleModifiers modifiers = default(CycleModifiers))
       {
         switch (State)
         {
@@ -158,7 +159,7 @@ namespace IngameScript
         State = AirlockStates.Pressurizing;
         // Signal Warning
         // Wait for Presserize Warning Time
-        if ((modifiers & CycleModifiers.SkipWaitTime) == 0)
+        if (!modifiers.SkipWaitTime)
         {
           var startTime = DateTime.Now;
           while ((DateTime.Now - startTime).Seconds < PressurizeWarningTime)
@@ -187,7 +188,14 @@ namespace IngameScript
         foreach (var door in InternalDoors)
         {
           door.Enabled = true;
-          if ((modifiers & CycleModifiers.AutoOpen) != 0) door.OpenDoor();
+          if (modifiers.AutoOpen != null && modifiers.AutoOpen.Count > 0)
+          {
+            foreach (var tag in modifiers.AutoOpen)
+            {
+              if (door.CustomName.Contains(tag)) door.OpenDoor();
+            }
+          }
+          else if (modifiers.AutoOpenAll) door.OpenDoor();
         }
         // TODO: Finish Implementing PresserizeProcedure
         State = AirlockStates.Pressurized;
@@ -200,7 +208,7 @@ namespace IngameScript
         // Signal Warnings
         ActivateWarnings();
         // Wait for Depresserize Warning Time
-        if ((modifiers & CycleModifiers.SkipWaitTime) == 0)
+        if (!modifiers.SkipWaitTime)
         {
           var startTime = DateTime.Now;
           int timeRemaining;
@@ -236,7 +244,14 @@ namespace IngameScript
         foreach (var door in ExternalDoors)
         {
           door.Enabled = true;
-          if ((modifiers & CycleModifiers.AutoOpen) != 0) door.OpenDoor();
+          if (modifiers.AutoOpen != null && modifiers.AutoOpen.Count > 0)
+          {
+            foreach (var tag in modifiers.AutoOpen)
+            {
+              if (door.CustomName.Contains(tag)) door.OpenDoor();
+            }
+          }
+          else if (modifiers.AutoOpenAll) door.OpenDoor();
         }
         // TODO: Finish DepresserizeProcedure Implementation
         State = AirlockStates.Depressurized;
