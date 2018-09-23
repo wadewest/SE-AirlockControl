@@ -215,6 +215,7 @@ namespace IngameScript
             lcdOutput.AppendLine("Warning\nAirlock Will\nDepressurize");
             lcdOutput.Append(timeRemaining.ToString()).AppendLine(" seconds");
             if (timeRemaining <= 5) lcdOutput.AppendLine("Stand Clear\nof Doors");
+            else if (timeRemaining <= 10) lcdOutput.AppendLine("Helments On");
             yield return true;
           }
         }
