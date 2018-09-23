@@ -164,8 +164,12 @@ namespace IngameScript
         if (!modifiers.SkipWaitTime)
         {
           var startTime = DateTime.Now;
-          while ((DateTime.Now - startTime).Seconds < PressurizeWarningTime)
+          int timeRemaining;
+          while ((timeRemaining = PressurizeWarningTime - (DateTime.Now - startTime).Seconds) > 0)
           {
+            lcdOutput.AppendLine("Warning\nAirlock Will\nPressurize");
+            lcdOutput.Append(timeRemaining.ToString()).AppendLine(" seconds");
+            if (timeRemaining <= 5) lcdOutput.AppendLine("Stand Clear\nof Doors");
             yield return true;
           }
         }
@@ -174,6 +178,7 @@ namespace IngameScript
         yield return true;
         while (AllDoors.Any(door => door.Status != DoorStatus.Closed))
         {
+          lcdOutput.AppendLine("Warning\nClosing Doors\nStand Clear");
           yield return true;
         }
         foreach (var door in AllDoors) door.Enabled = false;
@@ -182,6 +187,8 @@ namespace IngameScript
         foreach (var vent in MainVents) vent.Depressurize = false;
         while (MainVents.Any(vent => vent.GetOxygenLevel() < 1F))
         {
+          lcdOutput.AppendLine("Warning\nPressurizing");
+          lcdOutput.AppendLine($"{(int)(PrimaryVent.GetOxygenLevel() * 100)}%");
           yield return true;
         }
         State = AirlockStates.Pressurized;
