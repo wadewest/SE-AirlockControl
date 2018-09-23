@@ -31,6 +31,7 @@ namespace IngameScript
     {
       static readonly Color ColorSafe = new Color(0, 255, 0, 255);
       static readonly Color ColorDanger = new Color(255, 0, 0, 255);
+      static readonly Color ColorNormal = new Color(255, 255, 255, 255);
 
       private IMyBlockGroup BlockGroup;
       private string AirlockId;
@@ -158,6 +159,7 @@ namespace IngameScript
       {
         State = AirlockStates.Pressurizing;
         // Signal Warning
+        UpdateLights();
         // Wait for Presserize Warning Time
         if (!modifiers.SkipWaitTime)
         {
@@ -182,7 +184,9 @@ namespace IngameScript
         {
           yield return true;
         }
+        State = AirlockStates.Pressurized;
         // Turn Alarms Off
+        UpdateLights();
         // Update Lights and Displays
         // Unlock Internal Doors
         foreach (var door in InternalDoors)
@@ -198,7 +202,6 @@ namespace IngameScript
           else if (modifiers.AutoOpenAll) door.OpenDoor();
         }
         // TODO: Finish Implementing PresserizeProcedure
-        State = AirlockStates.Pressurized;
         yield return false;
       }
 
@@ -206,7 +209,7 @@ namespace IngameScript
       {
         State = AirlockStates.Depressurizing;
         // Signal Warnings
-        ActivateWarnings();
+        UpdateLights();
         // Wait for Depresserize Warning Time
         if (!modifiers.SkipWaitTime)
         {
@@ -238,7 +241,9 @@ namespace IngameScript
           lcdOutput.AppendLine($"{(int)(PrimaryVent.GetOxygenLevel() * 100)}%");
           yield return true;
         }
+        State = AirlockStates.Depressurized;
         // Turn Alarms Off
+        UpdateLights();
         // Update Lights and Displays
         // Unlock External Doors
         foreach (var door in ExternalDoors)
@@ -254,13 +259,58 @@ namespace IngameScript
           else if (modifiers.AutoOpenAll) door.OpenDoor();
         }
         // TODO: Finish DepresserizeProcedure Implementation
-        State = AirlockStates.Depressurized;
         yield return false;
       }
 
-      private void ActivateWarnings()
+      private void UpdateLights()
       {
-        // TODO: Implement ActivateWarnings
+        IEnumerable<IMyLightingBlock> safeLights, unsafeLights;
+        var blinkTheLights = false;
+        switch(State)
+        {
+          case AirlockStates.Depressurized:
+            safeLights = ExternalLights;
+            unsafeLights = InternalLights;
+            break;
+          case AirlockStates.Pressurized:
+            safeLights = InternalLights;
+            unsafeLights = ExternalLights;
+            break;
+          case AirlockStates.Depressurizing:
+          case AirlockStates.Pressurizing:
+            safeLights = new List<IMyLightingBlock>();
+            unsafeLights = AllLights;
+            blinkTheLights = true;
+            break;
+          default:
+            safeLights = unsafeLights = AllLights;
+            break;
+        }
+        foreach(var light in AllLights)
+        {
+          if (safeLights.Contains(light))
+          {
+            light.Color = ColorSafe;
+          }
+          else if (unsafeLights.Contains(light))
+          {
+            light.Color = ColorDanger;
+          }
+          else
+          {
+            light.Color = ColorNormal;
+          }
+          if (blinkTheLights)
+          {
+            light.BlinkIntervalSeconds = 0.5F;
+            light.BlinkOffset = 15F;
+          }
+          else
+          {
+            light.BlinkIntervalSeconds = 0F;
+          }
+        }
+      }
       }
 
       public IMyAirVent PrimaryVent
@@ -344,6 +394,30 @@ namespace IngameScript
             _lazy_cache["InternalDoors"] = AllDoors.Where(x => x.CustomName.Contains(TagInternalObjects));
           }
           return _lazy_cache["InternalDoors"] as IEnumerable<IMyDoor>;
+        }
+      }
+
+      public IEnumerable<IMyLightingBlock> ExternalLights
+      {
+        get
+        {
+          if (!_lazy_cache.ContainsKey("ExternalLights"))
+          {
+            _lazy_cache["ExternalLights"] = AllLights.Where(x => x.CustomName.Contains(TagExternalObjects));
+          }
+          return _lazy_cache["ExternalLights"] as IEnumerable<IMyLightingBlock>;
+        }
+      }
+
+      public IEnumerable<IMyLightingBlock> InternalLights
+      {
+        get
+        {
+          if (!_lazy_cache.ContainsKey("InternalLights"))
+          {
+            _lazy_cache["InternalLights"] = AllLights.Where(x => x.CustomName.Contains(TagInternalObjects));
+          }
+          return _lazy_cache["InternalLights"] as IEnumerable<IMyLightingBlock>;
         }
       }
 
