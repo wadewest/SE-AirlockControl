@@ -34,6 +34,7 @@ namespace IngameScript
       static readonly Color ColorNormal = new Color(255, 255, 255, 255);
 
       private IMyBlockGroup BlockGroup;
+      private int CurrentBlockCount;
       private string AirlockId;
       private Program TheProgram;
       private string CurrentConfig;
@@ -62,6 +63,7 @@ namespace IngameScript
       {
         State = AirlockStates.Initializing;
         BlockGroup = TheProgram.GridTerminalSystem.GetBlockGroupWithName(AirlockId);
+        CurrentBlockCount = CountTheBlocks();
         if (BlockGroup == null)
         {
           State = AirlockStates.BlockGroupNotFound;
@@ -150,6 +152,11 @@ namespace IngameScript
       {
         while (true)
         {
+          if (ShouldReinitialize())
+          {
+            Initialize();
+            yield return false;
+          }
           lcdOutput.AppendLine($"Airlock:\n{State}");
           yield return true;
         }
@@ -475,6 +482,18 @@ namespace IngameScript
         {
           return "Backup";
         }
+      }
+
+      private int CountTheBlocks()
+      {
+        var blocks = new List<IMyTerminalBlock>();
+        BlockGroup.GetBlocks(blocks);
+        return blocks.Count;
+      }
+
+      private bool ShouldReinitialize()
+      {
+        return CurrentBlockCount != CountTheBlocks();
       }
 
     }
