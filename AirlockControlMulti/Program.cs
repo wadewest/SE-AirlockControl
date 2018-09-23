@@ -105,11 +105,11 @@ namespace IngameScript
       }
       switch (CommandLine.Argument(0).ToLower())
       {
-        case "presserize":
+        case "pressurize":
         case "in":
           Airlocks[CommandLine.Argument(1)].CycleIn(modifiers);
           break;
-        case "depresserize":
+        case "depressurize":
         case "out":
           Airlocks[CommandLine.Argument(1)].CycleOut(modifiers);
           break;
