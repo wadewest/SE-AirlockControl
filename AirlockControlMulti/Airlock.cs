@@ -188,19 +188,7 @@ namespace IngameScript
         // Turn Alarms Off
         UpdateLights();
         // Update Lights and Displays
-        // Unlock Internal Doors
-        foreach (var door in InternalDoors)
-        {
-          door.Enabled = true;
-          if (modifiers.AutoOpen != null && modifiers.AutoOpen.Count > 0)
-          {
-            foreach (var tag in modifiers.AutoOpen)
-            {
-              if (door.CustomName.Contains(tag)) door.OpenDoor();
-            }
-          }
-          else if (modifiers.AutoOpenAll) door.OpenDoor();
-        }
+        UnlockDoors(modifiers, InternalDoors);
         // TODO: Finish Implementing PresserizeProcedure
         yield return false;
       }
@@ -245,19 +233,7 @@ namespace IngameScript
         // Turn Alarms Off
         UpdateLights();
         // Update Lights and Displays
-        // Unlock External Doors
-        foreach (var door in ExternalDoors)
-        {
-          door.Enabled = true;
-          if (modifiers.AutoOpen != null && modifiers.AutoOpen.Count > 0)
-          {
-            foreach (var tag in modifiers.AutoOpen)
-            {
-              if (door.CustomName.Contains(tag)) door.OpenDoor();
-            }
-          }
-          else if (modifiers.AutoOpenAll) door.OpenDoor();
-        }
+        UnlockDoors(modifiers, ExternalDoors);
         // TODO: Finish DepresserizeProcedure Implementation
         yield return false;
       }
@@ -311,6 +287,23 @@ namespace IngameScript
           }
         }
       }
+
+      private void UnlockDoors(CycleModifiers modifiers, IEnumerable<IMyDoor> Doors)
+      {
+        var doorsToOpen = new HashSet<IMyDoor>();
+        if (modifiers.AutoOpen != null)
+        {
+          foreach (var tag in modifiers.AutoOpen)
+          {
+            foreach (var door in Doors.Where(x => x.CustomName.Contains(tag))) { doorsToOpen.Add(door); }
+          }
+        }
+        foreach (var door in Doors)
+        {
+          door.Enabled = true;
+          if (modifiers.AutoOpenAll && doorsToOpen.Count < 1) door.OpenDoor();
+        }
+        foreach (var door in doorsToOpen) { door.OpenDoor(); }
       }
 
       public IMyAirVent PrimaryVent
